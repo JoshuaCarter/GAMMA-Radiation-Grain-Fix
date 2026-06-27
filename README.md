@@ -1,6 +1,6 @@
 # GAMMA Prone Fix
 
-Fixes the low-crouch ("prone") pose in **S.T.A.L.K.E.R. Anomaly** / **G.A.M.M.A.**: the third-person body now matches the first-person camera height, and the headlamp stays camera-locked instead of swinging from the raised head bone.
+Fixes the low-crouch ("prone") pose in **S.T.A.L.K.E.R. **G.A.M.M.A.**: the third-person body now matches the first-person camera height, and the headlamp stays camera-locked instead of swinging from the raised head bone.
 
 ## What it does
 

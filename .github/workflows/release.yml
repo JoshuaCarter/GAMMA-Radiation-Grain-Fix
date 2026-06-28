@@ -25,10 +25,12 @@ jobs:
       - name: Derive mod name from repo
         id: name
         run: |
-          SLUG="${{ github.event.repository.name }}"
-          SLUG="${SLUG/GAMMA/Dorns}"
-          echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
-          echo "title=$(echo "${SLUG//-/ }" | sed 's/Dorns/Dorn'\''s/')" >> "$GITHUB_OUTPUT"
+          TITLE="${{ github.event.repository.name }}"
+          TITLE="${TITLE//-/ }"
+          TITLE="${TITLE/GAMMA/Dorns}"
+          FILENAME="${TITLE// /_}"
+          echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+          echo "filename=$FILENAME" >> "$GITHUB_OUTPUT"
 
       - name: Check if this version was already released
         id: check
@@ -42,7 +44,7 @@ jobs:
       - name: Build mod zip
         if: steps.check.outputs.exists == 'false'
         run: |
-          zip -r "${{ steps.name.outputs.slug }}-${{ steps.meta.outputs.version }}.zip" gamedata meta.ini
+          zip -r "${{ steps.name.outputs.filename }}_${{ steps.meta.outputs.version }}.zip" gamedata meta.ini
 
       - name: Create release and attach zip
         if: steps.check.outputs.exists == 'false'
@@ -50,4 +52,4 @@ jobs:
         with:
           tag_name: "v${{ steps.meta.outputs.version }}"
           name: "${{ steps.name.outputs.title }} v${{ steps.meta.outputs.version }}"
-          files: "${{ steps.name.outputs.slug }}-${{ steps.meta.outputs.version }}.zip"
+          files: "${{ steps.name.outputs.filename }}_${{ steps.meta.outputs.version }}.zip"

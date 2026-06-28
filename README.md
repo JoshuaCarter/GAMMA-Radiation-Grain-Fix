@@ -17,3 +17,4 @@ In **S.T.A.L.K.E.R. G.A.M.M.A.**, radiation screen grain is driven mainly by how
 ## Warnings!
 
 - This mod **replaces** `gamedata/anims/radiation.ppe` with a blank version. Anything that uses the stock radiation postprocess file will no longer show grain from that path — including zone radiation, dynamic rad areas, and the vanilla radiation effect script.
+- I haven't tested this enough to know whether I've accidentally disabled the grain effect in a situation where it would be better to keep it (but I doubt it).

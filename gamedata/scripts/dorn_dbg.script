@@ -1,21 +1,21 @@
 --[[
 	Dorn game log — fixed-slot on-screen debug readout.
 
-	Each entry is keyed by `order`: 0 = top-left, 1 = next line down, etc.
-	Writing the same order again replaces that slot instead of adding a line.
+	Multiple mods share this single global. State is namespaced per `source`
+	(usually the caller's MOD_ID) so sibling Dorn mods don't fight over one
+	enable flag / slot table / HUD static.
+
+	Each entry is keyed by `order` within a source: 0 = top line, 1 = next, etc.
+	Writing the same (source, order) again replaces that slot.
 
 	API:
-	  dorn_dbg.set_enabled(state)        -- caller feeds on/off (clears HUD when off)
-	  dorn_dbg.write(order, msg, color)  -- set/replace a slot
-	  dorn_dbg.clear()                   -- wipe all slots
-	  dorn_dbg.COLORS                    -- color markup table (use values directly)
+	  dorn_dbg.set_enabled(source, state)        -- per-source on/off
+	  dorn_dbg.write(source, order, msg, color)  -- set/replace a slot
+	  dorn_dbg.clear()                           -- wipe everything
+	  dorn_dbg.COLORS                            -- color markup table
 
-	`color` is optional — pass a value from dorn_dbg.COLORS (defaults to COLORS.white).
+	`color` is optional — pass a value from dorn_dbg.COLORS (defaults to white).
 	Logger does not read MCM; each caller must call set_enabled().
-
-	Example:
-	  dorn_dbg.set_enabled(true)
-	  dorn_dbg.write(0, "cam height: 1.20", dorn_dbg.COLORS)
 ]]
 
 dorn_dbg = dorn_dbg or {}
@@ -90,9 +90,25 @@ local function resolve_color(color)
 	return dorn_dbg.COLORS[color] or dorn_dbg.COLORS.white
 end
 
--- slots[order] = { msg = string, color = string }
-local slots = {}
-local enabled = false
+-- sources[source] = { enabled = bool, slots = { [order] = { msg, color } } }
+local sources = {}
+
+local function get_source(source)
+	source = source or "default"
+	if not sources[source] then
+		sources[source] = { enabled = false, slots = {} }
+	end
+	return sources[source]
+end
+
+local function any_enabled()
+	for _, s in pairs(sources) do
+		if s.enabled then
+			return true
+		end
+	end
+	return false
+end
 
 -- Re-fetch (and re-add) the static every call; do not cache.
 local function get_static()
@@ -108,41 +124,6 @@ local function get_static()
 	return cs
 end
 
-local function render()
-	local cs = get_static()
-	if not cs then
-		return
-	end
-	local wnd = cs:wnd()
-	if not wnd then
-		return
-	end
-	wnd:SetWndPos(vector2():set(ORIGIN_X, ORIGIN_Y))
-
-	local max_order = -1
-	for order in pairs(slots) do
-		if order > max_order then
-			max_order = order
-		end
-	end
-	if max_order < 0 then
-		wnd:TextControl():SetTextST("")
-		return
-	end
-
-	local lines = {}
-	for order = 0, max_order do
-		local slot = slots[order]
-		if slot then
-			lines[#lines + 1] = resolve_color(slot.color) .. slot.msg
-		else
-			lines[#lines + 1] = ""
-		end
-	end
-
-	wnd:TextControl():SetTextST(table.concat(lines, "\\n"))
-end
-
 local function clear_screen()
 	local hud = get_hud()
 	if not hud then
@@ -153,40 +134,103 @@ local function clear_screen()
 	end
 end
 
-function dorn_dbg.set_enabled(state)
-	local on = state == true
-	if enabled == on then
+local function render()
+	if not any_enabled() then
+		clear_screen()
 		return
 	end
-	enabled = on
 
-	if enabled then
-		printf("[DBG] enabled")
-	else
-		printf("[DBG] disabled")
-		dorn_dbg.clear()
+	local cs = get_static()
+	if not cs then
+		return
 	end
+	local wnd = cs:wnd()
+	if not wnd then
+		return
+	end
+	wnd:SetWndPos(vector2():set(ORIGIN_X, ORIGIN_Y))
+
+	-- stable source order so lines don't jump around frame to frame
+	local names = {}
+	for name, s in pairs(sources) do
+		if s.enabled then
+			names[#names + 1] = name
+		end
+	end
+	table.sort(names)
+
+	local lines = {}
+	for _, name in ipairs(names) do
+		local slots = sources[name].slots
+
+		-- blank separator between sections
+		if #lines > 0 then
+			lines[#lines + 1] = ""
+		end
+		-- section header: source / mod id
+		lines[#lines + 1] = dorn_dbg.COLORS.dark_gray .. "[" .. name .. "]"
+
+		local max_order = -1
+		for order in pairs(slots) do
+			if order > max_order then
+				max_order = order
+			end
+		end
+		for order = 0, max_order do
+			local slot = slots[order]
+			if slot then
+				lines[#lines + 1] = resolve_color(slot.color) .. slot.msg
+			else
+				lines[#lines + 1] = ""
+			end
+		end
+	end
+
+	if #lines == 0 then
+		wnd:TextControl():SetTextST("")
+		return
+	end
+
+	wnd:TextControl():SetTextST(table.concat(lines, "\\n"))
 end
 
-function dorn_dbg.write(order, msg, color)
-	if not enabled then
+function dorn_dbg.set_enabled(source, state)
+	local s = get_source(source)
+	local on = state == true
+	if s.enabled == on then
+		return
+	end
+	s.enabled = on
+
+	if on then
+		printf("[DBG] %s enabled", tostring(source))
+	else
+		printf("[DBG] %s disabled", tostring(source))
+		s.slots = {}
+	end
+
+	render()
+end
+
+function dorn_dbg.write(source, order, msg, color)
+	local s = get_source(source)
+	if not s.enabled then
 		return
 	end
 	if order == nil then
 		order = 0
 	end
-	slots[order] = { msg = tostring(msg), color = color }
+	s.slots[order] = { msg = tostring(msg), color = color }
 	render()
 end
 
 function dorn_dbg.clear()
-	slots = {}
+	sources = {}
 	clear_screen()
 end
 
 function on_game_start()
-	slots = {}
-	enabled = false
+	sources = {}
 end
 
 function on_game_end()

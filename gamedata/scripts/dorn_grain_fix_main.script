@@ -20,12 +20,13 @@ local GRAIN_STRENGTH = 1.0
 local LOG_TYPE = {
 	LIFECYCLE = {order = 0, color = dorn_dbg.COLORS.gray},
 	RAD       = {order = 1, color = dorn_dbg.COLORS.green},
-	GRAIN     = {order = 2, color = dorn_dbg.COLORS.yellow},
+	ENV_RAD   = {order = 2, color = dorn_dbg.COLORS.cyan},
+	GRAIN     = {order = 3, color = dorn_dbg.COLORS.yellow},
 }
 
 local function log(log_type, msg)
 	if dorn_dbg then
-		dorn_dbg.write(log_type.order, "[GrainFix] " .. tostring(msg), log_type.color)
+		dorn_dbg.write(MOD_ID, log_type.order, "[GrainFix] " .. tostring(msg), log_type.color)
 	end
 end
 
@@ -34,6 +35,16 @@ local function radiation_effect_enabled()
 		return ui_options.get("video/player/radiation_effect") ~= false
 	end
 	return true
+end
+
+local function get_env_radiation()
+	local ok, env = pcall(function()
+		return level.get_env_rads()
+	end)
+	if not ok or not env then
+		return 0
+	end
+	return env
 end
 
 local function get_player_radiation(actor)
@@ -63,6 +74,7 @@ local function apply_grain(actor)
 	local msv = radiation_to_msv(radiation)
 
 	log(LOG_TYPE.RAD, string.format("player rad: %.4f (%d mSv)", radiation, msv))
+	log(LOG_TYPE.ENV_RAD, string.format("location rad: %.4f", get_env_radiation()))
 
 	if radiation <= 0 then
 		level.remove_pp_effector(PP_EFFECTOR_ID)
@@ -90,7 +102,7 @@ end
 local function cb_sync_config()
 	if dorn_mcm then
 		if dorn_dbg then
-			dorn_dbg.set_enabled(dorn_mcm.bool(MOD_ID, "development/debug_log", false))
+			dorn_dbg.set_enabled(MOD_ID, dorn_mcm.bool(MOD_ID, "development/debug_log", false))
 		end
 		GRAIN_STRENGTH = dorn_mcm.number(MOD_ID, "main/grain_strength", 1.0)
 	end

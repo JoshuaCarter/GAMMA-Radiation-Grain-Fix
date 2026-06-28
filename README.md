@@ -6,7 +6,7 @@ In **S.T.A.L.K.E.R. G.A.M.M.A.**, radiation screen grain is driven mainly by how
 
 - Turns off the stock location-based radiation grain entirely
 - Shows grain based on your **actual body radiation** instead
-- Lets you tune how strong the effect is in MCM
+- Lets you configure the **mSv thresholds** for each grain intensity level in MCM (Main → Level 0–8 mSv)
 
 ## Installation
 

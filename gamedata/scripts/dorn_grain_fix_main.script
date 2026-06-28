@@ -3,35 +3,27 @@
 
 	Replaces stock radiation.ppe with a no-op so zone/location radiation postprocesses
 	draw nothing. This script applies our own graded grain PPEs from player body
-	radiation (db.actor.radiation), scaled by MCM strength.
+	radiation (db.actor.radiation).
 ]]
 
 local MOD_ID = "dorn_grain_fix"
-
 local PP_EFFECTOR_ID = 2021
--- Each level is { msv = minimum mSv to use it, ppe = file (noise_i in comment) }.
--- Ordered low to high; we pick the last level whose msv the player has crossed.
-local GRAIN_LEVELS = {
-	{ msv = 1,    ppe = "dorn_radiation_grain_01.ppe" }, -- 0.3 noise
-	{ msv = 500,  ppe = "dorn_radiation_grain_02.ppe" }, -- 0.5 noise
-	{ msv = 600,  ppe = "dorn_radiation_grain_03.ppe" }, -- 0.7 noise
-	{ msv = 700,  ppe = "dorn_radiation_grain_04.ppe" }, -- 0.9 noise
-	{ msv = 800,  ppe = "dorn_radiation_grain_05.ppe" }, -- 1.2 noise
-	{ msv = 900,  ppe = "dorn_radiation_grain_06.ppe" }, -- 1.5 noise
-	{ msv = 950,  ppe = "dorn_radiation_grain_07.ppe" }, -- 1.7 noise
-	{ msv = 1000, ppe = "dorn_radiation_grain_08.ppe" }, -- 2.0 noise
+
+local GRAIN_PPES = {
+	"dorn_radiation_grain_01.ppe",
+	"dorn_radiation_grain_02.ppe",
+	"dorn_radiation_grain_03.ppe",
+	"dorn_radiation_grain_04.ppe",
+	"dorn_radiation_grain_05.ppe",
+	"dorn_radiation_grain_06.ppe",
+	"dorn_radiation_grain_07.ppe",
+	"dorn_radiation_grain_08.ppe",
 }
+local LEVEL_MSV_DEFAULTS = { 1, 100, 200, 400, 600, 800, 1000, 1200, 1400 }
+
+local GRAIN_LEVELS = {}
+local MSV_MAX = 1
 local current_ppe = nil
-
-local RADIATION_TO_MSV = 10000 * 0.387
-
--- Intensity (green tint via effector factor) ramps over this range.
-local MSV_FLOOR = 500
-local MSV_FULL = 1000
-local INTENSITY_AT_FLOOR = 0.13
-local MIN_FACTOR = 0.02
-
-local GRAIN_STRENGTH = 1.0
 
 local LOG_TYPE = {
 	LIFECYCLE = {order = 0, color = dorn_dbg.COLORS.gray},
@@ -66,7 +58,7 @@ local function get_player_radiation(actor)
 end
 
 local function radiation_to_msv(radiation)
-	return radiation * RADIATION_TO_MSV
+	return radiation * 10000 * 0.387
 end
 
 local function msv_to_ppe(msv)
@@ -79,20 +71,6 @@ local function msv_to_ppe(msv)
 		end
 	end
 	return ppe
-end
-
-local function msv_to_intensity(msv)
-	if msv <= 0 then
-		return 0
-	end
-	if msv >= MSV_FULL then
-		return 1.0
-	end
-	if msv <= MSV_FLOOR then
-		return (msv / MSV_FLOOR) * INTENSITY_AT_FLOOR
-	end
-	local t = (msv - MSV_FLOOR) / (MSV_FULL - MSV_FLOOR)
-	return INTENSITY_AT_FLOOR + t * (1.0 - INTENSITY_AT_FLOOR)
 end
 
 local function set_grain(ppe)
@@ -118,25 +96,25 @@ local function apply_grain(actor)
 
 	local radiation = get_player_radiation(actor)
 	local msv = radiation_to_msv(radiation)
-	local intensity = msv_to_intensity(msv) * GRAIN_STRENGTH
-	if intensity > 1 then
-		intensity = 1
-	end
+	local ppe = msv_to_ppe(msv)
 
 	log(LOG_TYPE.RAD, string.format("player rad: %.4f (%d mSv)", radiation, math.ceil(msv)))
 
-	local ppe = msv_to_ppe(msv)
-	if not ppe or intensity < MIN_FACTOR then
+	if not ppe then
 		set_grain(nil)
-		log(LOG_TYPE.GRAIN, string.format("grain off (ppe %s, intensity %.4f < %.3f)",
-			tostring(ppe), intensity, MIN_FACTOR))
+		log(LOG_TYPE.GRAIN, "grain off")
 		return
 	end
 
+	local tint = msv / MSV_MAX
+	if tint > 1 then
+		tint = 1
+	end
+
 	set_grain(ppe)
-	level.set_pp_effector_factor(PP_EFFECTOR_ID, intensity)
-	log(LOG_TYPE.GRAIN, string.format("grain %s  intensity %.3f (%d mSv, strength %.2f)",
-		ppe, intensity, math.ceil(msv), GRAIN_STRENGTH))
+	level.set_pp_effector_factor(PP_EFFECTOR_ID, tint)
+	log(LOG_TYPE.GRAIN, string.format("grain %s  tint %.3f (%d mSv)",
+		ppe, tint, math.ceil(msv)))
 end
 
 local function cb_actor_on_update()
@@ -147,13 +125,28 @@ local function cb_actor_on_update()
 	apply_grain(actor)
 end
 
-local function cb_sync_config()
-	if dorn_mcm then
-		if dorn_dbg then
-			dorn_dbg.set_enabled(MOD_ID, dorn_mcm.bool(MOD_ID, "development/debug_log", false))
+local function sync_grain_levels()
+	GRAIN_LEVELS = {}
+
+	for i, ppe in ipairs(GRAIN_PPES) do
+		local msv = LEVEL_MSV_DEFAULTS[i]
+		if dorn_mcm then
+			msv = dorn_mcm.number(MOD_ID, "main/level_" .. string.format("%02d", i - 1) .. "_msv", msv)
 		end
-		GRAIN_STRENGTH = dorn_mcm.number(MOD_ID, "main/grain_strength", 1.0)
+		table.insert(GRAIN_LEVELS, { msv = msv, ppe = ppe })
 	end
+
+	MSV_MAX = LEVEL_MSV_DEFAULTS[9]
+	if dorn_mcm then
+		MSV_MAX = dorn_mcm.number(MOD_ID, "main/level_08_msv", MSV_MAX)
+	end
+end
+
+local function cb_sync_config()
+	if dorn_mcm and dorn_dbg then
+		dorn_dbg.set_enabled(MOD_ID, dorn_mcm.bool(MOD_ID, "development/debug_log", false))
+	end
+	sync_grain_levels()
 end
 
 function on_game_start()

@@ -22,6 +22,14 @@ jobs:
           VERSION=$(grep -E '^version=' meta.ini | head -1 | cut -d'=' -f2 | tr -d '[:space:]')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Derive mod name from repo
+        id: name
+        run: |
+          SLUG="${{ github.event.repository.name }}"
+          SLUG="${SLUG/GAMMA/Dorns}"
+          echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
+          echo "title=$(echo "${SLUG//-/ }" | sed 's/Dorns/Dorn'\''s/')" >> "$GITHUB_OUTPUT"
+
       - name: Check if this version was already released
         id: check
         run: |
@@ -34,12 +42,12 @@ jobs:
       - name: Build mod zip
         if: steps.check.outputs.exists == 'false'
         run: |
-          zip -r "Dorns-Prone-Fix-${{ steps.meta.outputs.version }}.zip" gamedata meta.ini
+          zip -r "${{ steps.name.outputs.slug }}-${{ steps.meta.outputs.version }}.zip" gamedata meta.ini
 
       - name: Create release and attach zip
         if: steps.check.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v${{ steps.meta.outputs.version }}"
-          name: "Dorn's Prone Fix v${{ steps.meta.outputs.version }}"
-          files: "Dorns-Prone-Fix-${{ steps.meta.outputs.version }}.zip"
+          name: "${{ steps.name.outputs.title }} v${{ steps.meta.outputs.version }}"
+          files: "${{ steps.name.outputs.slug }}-${{ steps.meta.outputs.version }}.zip"

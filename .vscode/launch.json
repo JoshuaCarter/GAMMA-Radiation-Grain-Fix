@@ -2,10 +2,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Tail Dorn Prone Fix Log",
+            "name": "Tail Log",
             "type": "node-terminal",
             "request": "launch",
-            "command": "tail -f \"C:\\Anomaly\\appdata\\logs\\xray_khada.log\" | grep --line-buffered -E \"\\[ProneFix\\]|\\[DBG\\]\""
+            "command": "tail -f \"C:\\Anomaly\\appdata\\logs\\xray_khada.log\" | grep --line-buffered -E \"\\[GrainFix\\]|\\[DBG\\]\""
         },
         {
             "type": "lua",

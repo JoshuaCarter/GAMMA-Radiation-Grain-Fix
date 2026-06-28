@@ -1,0 +1,23 @@
+; Dorn's Radiation Grain Fix
+; Disable location-driven radiation grain/noise (zone + base postprocess).
+; Player-body grain is applied in script from db.actor.radiation.
+
+![postprocess_base]
+noise       = 0
+noise_scale = 0
+
+![postprocess_anomaly]
+noise       = 0
+noise_scale = 0
+
+![postprocess_rad]
+radius_min  = 0.0
+radius_max  = 0.0
+
+![postprocess_fuzz]
+radius_min  = 0.0
+radius_max  = 0.0
+
+![postprocess_new]
+radius_min  = 0.0
+radius_max  = 0.0

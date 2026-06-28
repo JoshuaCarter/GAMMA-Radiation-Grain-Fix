@@ -1,0 +1,111 @@
+--[[
+	Dorn's Radiation Grain Fix
+
+	Zone/base radiation postprocess noise is disabled via mod_system_dorn_grain_fix.ltx.
+	Grain is driven only from the player's body radiation (db.actor.radiation), scaled
+	by MCM strength. mSv display uses the same factor as G_FLAT's radiation icon mod.
+]]
+
+local MOD_ID = "dorn_grain_fix"
+
+-- Same slot actor_effects.script uses for radiation.ppe
+local PP_EFFECTOR_ID = 2020
+local PP_EFFECTOR_NAME = "radiation.ppe"
+
+-- db.actor.radiation -> HUD mSv (G_FLAT msv_over_radiation_status)
+local RADIATION_TO_MSV = 10000 * 0.387
+
+local GRAIN_STRENGTH = 1.0
+
+local LOG_TYPE = {
+	LIFECYCLE = {order = 0, color = dorn_dbg.COLORS.gray},
+	RAD       = {order = 1, color = dorn_dbg.COLORS.green},
+	GRAIN     = {order = 2, color = dorn_dbg.COLORS.yellow},
+}
+
+local function log(log_type, msg)
+	if dorn_dbg then
+		dorn_dbg.write(log_type.order, "[GrainFix] " .. tostring(msg), log_type.color)
+	end
+end
+
+local function radiation_effect_enabled()
+	if ui_options then
+		return ui_options.get("video/player/radiation_effect") ~= false
+	end
+	return true
+end
+
+local function get_player_radiation(actor)
+	if not actor then
+		return 0
+	end
+	local ok, radiation = pcall(function()
+		return actor.radiation
+	end)
+	if not ok or not radiation or radiation <= 0 then
+		return 0
+	end
+	return radiation
+end
+
+local function radiation_to_msv(radiation)
+	return math.ceil(radiation * RADIATION_TO_MSV)
+end
+
+local function apply_grain(actor)
+	if not radiation_effect_enabled() then
+		level.remove_pp_effector(PP_EFFECTOR_ID)
+		return
+	end
+
+	local radiation = get_player_radiation(actor)
+	local msv = radiation_to_msv(radiation)
+
+	log(LOG_TYPE.RAD, string.format("player rad: %.4f (%d mSv)", radiation, msv))
+
+	if radiation <= 0 then
+		level.remove_pp_effector(PP_EFFECTOR_ID)
+		return
+	end
+
+	local factor = radiation * GRAIN_STRENGTH
+	if factor > 1 then
+		factor = 1
+	end
+
+	level.add_pp_effector(PP_EFFECTOR_NAME, PP_EFFECTOR_ID, true)
+	level.set_pp_effector_factor(PP_EFFECTOR_ID, factor)
+	log(LOG_TYPE.GRAIN, string.format("grain factor: %.3f (strength %.2f)", factor, GRAIN_STRENGTH))
+end
+
+local function cb_actor_on_update()
+	local actor = db.actor
+	if not actor then
+		return
+	end
+	apply_grain(actor)
+end
+
+local function cb_sync_config()
+	if dorn_mcm then
+		if dorn_dbg then
+			dorn_dbg.set_enabled(dorn_mcm.bool(MOD_ID, "development/debug_log", false))
+		end
+		GRAIN_STRENGTH = dorn_mcm.number(MOD_ID, "main/grain_strength", 1.0)
+	end
+end
+
+function on_game_start()
+	cb_sync_config()
+	RegisterScriptCallback("actor_on_update", cb_actor_on_update)
+	RegisterScriptCallback("on_option_change", cb_sync_config)
+	log(LOG_TYPE.LIFECYCLE, "loaded")
+end
+
+function on_game_end()
+	level.remove_pp_effector(PP_EFFECTOR_ID)
+	UnregisterScriptCallback("actor_on_update", cb_actor_on_update)
+	UnregisterScriptCallback("on_option_change", cb_sync_config)
+	log(LOG_TYPE.LIFECYCLE, "unloaded")
+end

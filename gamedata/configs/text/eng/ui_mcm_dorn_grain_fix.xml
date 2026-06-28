@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+	<string id="ui_mcm_menu_dorn_grain_fix">
+		<text>Dorn's Radiation Grain Fix</text>
+	</string>
+	<string id="ui_mcm_dorn_grain_fix_grain_strength">
+		<text>Grain strength</text>
+	</string>
+	<string id="ui_mcm_dorn_grain_fix_debug_log">
+		<text>Debug logging (on-screen)</text>
+	</string>
+</string_table>

@@ -1,33 +1,21 @@
-# GAMMA Prone Fix
+# GAMMA Radiation Grain Fix
 
-Makes low-crouch ("prone") in **S.T.A.L.K.E.R. G.A.M.M.A.** actually useful — within the limits of what modding allows. It's a hacky workaround, not a proper prone system., but it's no worse than what we have now IMO.
+In **S.T.A.L.K.E.R. G.A.M.M.A.**, radiation screen grain/noise is driven mainly by how radioactive your **location** is. That means you can get heavy grain in a hot zone even when your body radiation is still low.
 
-## Demo
-
-https://github.com/user-attachments/assets/d76e38ac-12f6-43be-a209-573fa6dc55bb
-
-## The problem
-
-Vanilla prone is fake. It's really just a low crouch: your view drops, but your body stays much higher. You can:
-
-- Think you're behind cover when you're not — enemies shoot you in the face.
-- Stick up or out of tight gaps (like a skinny pipe) while feeling fully hidden in first person
-
-## What this mod does
-
-- Lowers your posture to something closer to real prone
-- Fixes the headlamp while prone so the light follows your view, not your floating head
-- Hides legs and arms on the prone body to reduce clipping through walls and ugly shadows
-
-## What to expect
-
-- **First person** — feels more like actual prone
-- **Third person** — looks ridiculous
-- Getting in and out of prone is janky but this only affects shadows (and it's less janky than current shadows anyway)
-- Best effort given modding constraints — also my first mod - don't expect too much
+This mod turns off location-driven grain and drives `radiation.ppe` only from **your body radiation** (`db.actor.radiation` — the same value shown as mSv on the radiation HUD icon).
 
 ## Installation
 
-1. Install via MCM like normal
+1. Download the latest release from [releases](https://github.com/JoshuaCarter/GAMMA-Radiation-Grain-Fix/releases)
+2. Install with Mod Organizer 2 like any other mod
 
-**WARNING!** This mod overrides the `stalker_smart_cover_animation.omf` animations file so it wont play nice with other mods that do the same (If you know a better way, im listening)
+## Settings
+
+**MCM → Dorn's Radiation Grain Fix**
+
+- **Grain strength** — multiplier on top of body radiation (0 = off, 1 = match body rads, 2 = double)
+
+## Requirements
+
+- S.T.A.L.K.E.R. G.A.M.M.A.
+- [Mod Configuration Menu (MCM)](https://www.moddb.com/mods/stalker-anomaly/addons/anomaly-mod-configuration-menu)

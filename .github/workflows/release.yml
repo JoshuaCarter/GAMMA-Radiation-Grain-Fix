@@ -44,7 +44,7 @@ jobs:
       - name: Build mod zip
         if: steps.check.outputs.exists == 'false'
         run: |
-          zip -r "${{ steps.name.outputs.filename }}_${{ steps.meta.outputs.version }}.zip" gamedata meta.ini
+          zip -r "${{ steps.name.outputs.filename }} ${{ steps.meta.outputs.version }}.zip" gamedata meta.ini
 
       - name: Create release and attach zip
         if: steps.check.outputs.exists == 'false'
@@ -52,4 +52,4 @@ jobs:
         with:
           tag_name: "v${{ steps.meta.outputs.version }}"
           name: "${{ steps.name.outputs.title }} v${{ steps.meta.outputs.version }}"
-          files: "${{ steps.name.outputs.filename }}_${{ steps.meta.outputs.version }}.zip"
+          files: "${{ steps.name.outputs.filename }} ${{ steps.meta.outputs.version }}.zip"

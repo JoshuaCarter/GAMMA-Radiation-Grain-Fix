@@ -1,19 +1,23 @@
 --[[
 	Dorn's Radiation Grain Fix
 
-	Zone/base radiation postprocess noise is disabled via mod_system_dorn_grain_fix.ltx.
-	Grain is driven only from the player's body radiation (db.actor.radiation), scaled
-	by MCM strength. mSv display uses the same factor as G_FLAT's radiation icon mod.
+	The stock radiation.ppe is replaced by a no-op file in this mod, so zone/location
+	radiation postprocesses can still fire without drawing grain. This script drives
+	our private PPE from the player's body radiation (db.actor.radiation), scaled by
+	MCM strength. mSv display uses the same factor as G_FLAT's radiation icon mod.
 ]]
 
 local MOD_ID = "dorn_grain_fix"
 
--- Same slot actor_effects.script uses for radiation.ppe
-local PP_EFFECTOR_ID = 2020
-local PP_EFFECTOR_NAME = "radiation.ppe"
+local PP_EFFECTOR_ID = 2021
+local PP_EFFECTOR_NAME = "dorn_radiation_grain.ppe"
 
 -- db.actor.radiation -> HUD mSv (G_FLAT msv_over_radiation_status)
 local RADIATION_TO_MSV = 10000 * 0.387
+
+-- Below this final factor we remove the effector entirely instead of leaving a tiny
+-- residual grain stuck on screen (the engine never lets a cyclic effector reach 0).
+local MIN_FACTOR = 0.02
 
 local GRAIN_STRENGTH = 1.0
 
@@ -37,7 +41,12 @@ local function radiation_effect_enabled()
 	return true
 end
 
-local function get_env_radiation()
+-- NOTE: level.get_env_rads() is NOT a reliable location-radiation reading.
+-- The engine derives it from the HUD geiger sensor (radioactive floor materials +
+-- HUD-detectable zones), it decays ~90%/sec, and it reads 0 for scripted/dynamic
+-- radiation fields (e.g. the dynamic rad areas mod) that aren't registered with the
+-- HUD zone list. Kept only as a rough debug comparison, never as the source of truth.
+local function get_geiger_sensor()
 	local ok, env = pcall(function()
 		return level.get_env_rads()
 	end)
@@ -45,6 +54,26 @@ local function get_env_radiation()
 		return 0
 	end
 	return env
+end
+
+-- Source of truth for "is this spot hot": the rate of change of the player's actual
+-- radiation (db.actor.radiation). Positive = gaining rads (in a field), regardless of
+-- how those rads are delivered. Negative/zero = safe (body rad draining off).
+local prev_radiation = nil
+local prev_time = nil
+
+local function get_incoming_rad_rate(radiation)
+	local now = time_global()
+	local rate = 0
+	if prev_radiation and prev_time and now > prev_time then
+		local dt = (now - prev_time) / 1000
+		if dt > 0 then
+			rate = (radiation - prev_radiation) / dt
+		end
+	end
+	prev_radiation = radiation
+	prev_time = now
+	return rate
 end
 
 local function get_player_radiation(actor)
@@ -65,6 +94,10 @@ local function radiation_to_msv(radiation)
 end
 
 local function apply_grain(actor)
+	if not actor then
+		return
+	end
+
 	if not radiation_effect_enabled() then
 		level.remove_pp_effector(PP_EFFECTOR_ID)
 		return
@@ -72,23 +105,25 @@ local function apply_grain(actor)
 
 	local radiation = get_player_radiation(actor)
 	local msv = radiation_to_msv(radiation)
+	local rate = get_incoming_rad_rate(radiation)
 
 	log(LOG_TYPE.RAD, string.format("player rad: %.4f (%d mSv)", radiation, msv))
-	log(LOG_TYPE.ENV_RAD, string.format("location rad: %.4f", get_env_radiation()))
-
-	if radiation <= 0 then
-		level.remove_pp_effector(PP_EFFECTOR_ID)
-		return
-	end
+	log(LOG_TYPE.ENV_RAD, string.format("incoming: %+.5f/s  geiger: %.4f", rate, get_geiger_sensor()))
 
 	local factor = radiation * GRAIN_STRENGTH
 	if factor > 1 then
 		factor = 1
 	end
 
-	level.add_pp_effector(PP_EFFECTOR_NAME, PP_EFFECTOR_ID, true)
-	level.set_pp_effector_factor(PP_EFFECTOR_ID, factor)
-	log(LOG_TYPE.GRAIN, string.format("grain factor: %.3f (strength %.2f)", factor, GRAIN_STRENGTH))
+	if factor < MIN_FACTOR then
+		level.remove_pp_effector(PP_EFFECTOR_ID)
+		log(LOG_TYPE.GRAIN, string.format("grain off (factor %.4f < %.3f)", factor, MIN_FACTOR))
+	else
+		level.add_pp_effector(PP_EFFECTOR_NAME, PP_EFFECTOR_ID, true)
+		level.set_pp_effector_factor(PP_EFFECTOR_ID, factor)
+		log(LOG_TYPE.GRAIN, string.format("grain factor: %.3f (strength %.2f)", factor, GRAIN_STRENGTH))
+	end
+
 end
 
 local function cb_actor_on_update()

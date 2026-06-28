@@ -6,7 +6,7 @@ In **S.T.A.L.K.E.R. G.A.M.M.A.**, radiation screen grain is driven mainly by how
 
 - Turns off the stock location-based radiation grain entirely
 - Shows grain based on your **actual body radiation** instead
-- Lets you configure the **mSv thresholds** for each grain intensity level in MCM (Main → Level 0–8 mSv)
+- Lets you configure the **mSv thresholds** for each grain intensity
 
 ## Installation
 
@@ -16,4 +16,4 @@ In **S.T.A.L.K.E.R. G.A.M.M.A.**, radiation screen grain is driven mainly by how
 
 ## Warnings!
 
-- This mod **replaces** `gamedata/anims/radiation.ppe` with a blank version. Anything that uses the stock radiation postprocess file will no longer show grain from that path — including zone radiation, dynamic rad areas, and the vanilla radiation effect script. That is intentional, but it will not play nice with other mods that ship their own `radiation.ppe` (e.g. NoRadiationGrainFX, GAMMA Postprocess Effects, Dynamic Anomalies Overhaul). **Load this mod after those** so our override wins.
+- This mod **replaces** `gamedata/anims/radiation.ppe` with a blank version. Anything that uses the stock radiation postprocess file will no longer show grain from that path — including zone radiation, dynamic rad areas, and the vanilla radiation effect script.

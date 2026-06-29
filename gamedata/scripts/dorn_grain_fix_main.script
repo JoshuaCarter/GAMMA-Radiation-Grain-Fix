@@ -19,10 +19,13 @@ local GRAIN_PPES = {
 	"dorn_radiation_grain_07.ppe",
 	"dorn_radiation_grain_08.ppe",
 }
-local LEVEL_MSV_DEFAULTS = { 1, 100, 200, 400, 600, 800, 1000, 1200, 1400 }
+local CONFIG = {
+	debug_log = false,
+	level_msv = { 1, 100, 200, 400, 600, 800, 1000, 1200 },
+	msv_max = 1400,
+}
 
 local GRAIN_LEVELS = {}
-local MSV_MAX = 1
 local current_ppe = nil
 
 local LOG_TYPE = {
@@ -107,7 +110,7 @@ local function apply_grain(actor)
 		return
 	end
 
-	local tint = msv / MSV_MAX
+	local tint = msv / CONFIG.msv_max
 	if tint > 1 then
 		tint = 1
 	end
@@ -118,7 +121,7 @@ local function apply_grain(actor)
 		ppe, tint, math.ceil(msv)))
 end
 
-local function cb_actor_on_update()
+local function on_actor_on_update()
 	local actor = db.actor
 	if not actor then
 		return
@@ -126,41 +129,40 @@ local function cb_actor_on_update()
 	apply_grain(actor)
 end
 
-local function sync_grain_levels()
-	GRAIN_LEVELS = {}
-
-	for i, ppe in ipairs(GRAIN_PPES) do
-		local msv = LEVEL_MSV_DEFAULTS[i]
-		if _G.dorn_mcm then
-			msv = _G.dorn_mcm.number(MOD_ID, "main/level_" .. string.format("%02d", i - 1) .. "_msv", msv)
-		end
-		table.insert(GRAIN_LEVELS, { msv = msv, ppe = ppe })
-	end
-
-	MSV_MAX = LEVEL_MSV_DEFAULTS[9]
+local function on_option_change()
 	if _G.dorn_mcm then
-		MSV_MAX = _G.dorn_mcm.number(MOD_ID, "main/level_08_msv", MSV_MAX)
+		CONFIG.debug_log = _G.dorn_mcm.bool(MOD_ID, "development/debug_log", false)
+		for i = 1, 8 do
+			CONFIG.level_msv[i] = _G.dorn_mcm.number(
+				MOD_ID,
+				"main/level_" .. string.format("%02d", i - 1) .. "_msv",
+				CONFIG.level_msv[i]
+			)
+		end
+		CONFIG.msv_max = _G.dorn_mcm.number(MOD_ID, "main/level_08_msv", CONFIG.msv_max)
 	end
-end
 
-local function cb_sync_config()
-	if _G.dorn_mcm and _G.dorn_dbg then
-		_G.dorn_dbg.set_enabled(MOD_ID, _G.dorn_mcm.bool(MOD_ID, "development/debug_log", false))
+	GRAIN_LEVELS = {}
+	for i, ppe in ipairs(GRAIN_PPES) do
+		table.insert(GRAIN_LEVELS, { msv = CONFIG.level_msv[i], ppe = ppe })
 	end
-	sync_grain_levels()
+
+	if _G.dorn_dbg then
+		_G.dorn_dbg.set_enabled(MOD_ID, CONFIG.debug_log)
+	end
 end
 
 function on_game_start()
-	cb_sync_config()
-	RegisterScriptCallback("actor_on_update", cb_actor_on_update)
-	RegisterScriptCallback("on_option_change", cb_sync_config)
+	on_option_change()
+	RegisterScriptCallback("actor_on_update", on_actor_on_update)
+	RegisterScriptCallback("on_option_change", on_option_change)
 	log(LOG_TYPE.LIFECYCLE, "loaded")
 end
 
 function on_game_end()
 	level.remove_pp_effector(PP_EFFECTOR_ID)
 	current_ppe = nil
-	UnregisterScriptCallback("actor_on_update", cb_actor_on_update)
-	UnregisterScriptCallback("on_option_change", cb_sync_config)
+	UnregisterScriptCallback("actor_on_update", on_actor_on_update)
+	UnregisterScriptCallback("on_option_change", on_option_change)
 	log(LOG_TYPE.LIFECYCLE, "unloaded")
 end

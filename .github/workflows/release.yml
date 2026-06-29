@@ -44,7 +44,11 @@ jobs:
 
       - name: Vendor shared Dorn scripts
         if: steps.check.outputs.exists == 'false'
-        run: bash scripts/vendor-dorn-common.sh
+        run: |
+          mkdir -p gamedata/scripts
+          cp GAMMA-common/gamedata/scripts/dorn_dbg.script \
+             GAMMA-common/gamedata/scripts/dorn_mcm.script \
+             gamedata/scripts/
 
       - name: Build mod zip
         if: steps.check.outputs.exists == 'false'

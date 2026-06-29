@@ -10,6 +10,6 @@ Desktop.ini
 *.swp
 *~
 
-# Vendored from dorn-common submodule (runtime: use MO2 000-Dorns_Common)
+# Vendored from GAMMA-common submodule (runtime: use MO2 Dorns_Common)
 gamedata/scripts/dorn_dbg.script
 gamedata/scripts/dorn_mcm.script

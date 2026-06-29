@@ -29,15 +29,16 @@ local GRAIN_LEVELS = {}
 local current_ppe = nil
 
 local LOG_TYPE = {
-	LIFECYCLE = {order = 0, color = _G.dorn_dbg.COLORS.gray},
-	RAD       = {order = 1, color = _G.dorn_dbg.COLORS.green},
-	GRAIN     = {order = 2, color = _G.dorn_dbg.COLORS.yellow},
+	LIFECYCLE = {order = 0, color = "gray"},
+	RAD       = {order = 1, color = "green"},
+	GRAIN     = {order = 2, color = "yellow"},
 }
 
 local function log(log_type, msg)
 	if _G.dorn_dbg then
 		local slot = log_type or LOG_TYPE.LIFECYCLE
-		_G.dorn_dbg.write(MOD_ID, slot.order, "[GrainFix] " .. tostring(msg), slot.color)
+		local colors = _G.dorn_dbg.COLORS
+		_G.dorn_dbg.write(MOD_ID, slot.order, "[GrainFix] " .. tostring(msg), colors and colors[slot.color])
 	end
 end
 

@@ -12,7 +12,8 @@ In **S.T.A.L.K.E.R. G.A.M.M.A.**, radiation screen grain is driven mainly by how
 
 1. Download the latest release from https://github.com/JoshuaCarter/GAMMA-Radiation-Grain-Fix/releases
 2. Install with Mod Organizer 2 like any other mod
-3. Place this mod **below** other mods that change radiation postprocess
+3. **Requires [000-Dorns Common](https://github.com/JoshuaCarter/dorn-common)** — enable it **above** this mod in load order
+4. Place this mod **below** other mods that change radiation postprocess
 
 ## Warnings!
 

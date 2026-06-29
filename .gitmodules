@@ -1,0 +1,4 @@
+[submodule "dorn-common"]
+	path = dorn-common
+	url = https://github.com/JoshuaCarter/dorn-common.git
+	branch = main

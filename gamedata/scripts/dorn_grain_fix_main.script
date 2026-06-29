@@ -26,14 +26,15 @@ local MSV_MAX = 1
 local current_ppe = nil
 
 local LOG_TYPE = {
-	LIFECYCLE = {order = 0, color = dorn_dbg.COLORS.gray},
-	RAD       = {order = 1, color = dorn_dbg.COLORS.green},
-	GRAIN     = {order = 2, color = dorn_dbg.COLORS.yellow},
+	LIFECYCLE = {order = 0, color = _G.dorn_dbg.COLORS.gray},
+	RAD       = {order = 1, color = _G.dorn_dbg.COLORS.green},
+	GRAIN     = {order = 2, color = _G.dorn_dbg.COLORS.yellow},
 }
 
 local function log(log_type, msg)
-	if dorn_dbg then
-		dorn_dbg.write(MOD_ID, log_type.order, "[GrainFix] " .. tostring(msg), log_type.color)
+	if _G.dorn_dbg then
+		local slot = log_type or LOG_TYPE.LIFECYCLE
+		_G.dorn_dbg.write(MOD_ID, slot.order, "[GrainFix] " .. tostring(msg), slot.color)
 	end
 end
 
@@ -130,21 +131,21 @@ local function sync_grain_levels()
 
 	for i, ppe in ipairs(GRAIN_PPES) do
 		local msv = LEVEL_MSV_DEFAULTS[i]
-		if dorn_mcm then
-			msv = dorn_mcm.number(MOD_ID, "main/level_" .. string.format("%02d", i - 1) .. "_msv", msv)
+		if _G.dorn_mcm then
+			msv = _G.dorn_mcm.number(MOD_ID, "main/level_" .. string.format("%02d", i - 1) .. "_msv", msv)
 		end
 		table.insert(GRAIN_LEVELS, { msv = msv, ppe = ppe })
 	end
 
 	MSV_MAX = LEVEL_MSV_DEFAULTS[9]
-	if dorn_mcm then
-		MSV_MAX = dorn_mcm.number(MOD_ID, "main/level_08_msv", MSV_MAX)
+	if _G.dorn_mcm then
+		MSV_MAX = _G.dorn_mcm.number(MOD_ID, "main/level_08_msv", MSV_MAX)
 	end
 end
 
 local function cb_sync_config()
-	if dorn_mcm and dorn_dbg then
-		dorn_dbg.set_enabled(MOD_ID, dorn_mcm.bool(MOD_ID, "development/debug_log", false))
+	if _G.dorn_mcm and _G.dorn_dbg then
+		_G.dorn_dbg.set_enabled(MOD_ID, _G.dorn_mcm.bool(MOD_ID, "development/debug_log", false))
 	end
 	sync_grain_levels()
 end

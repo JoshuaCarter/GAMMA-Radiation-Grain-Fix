@@ -16,7 +16,7 @@ https://github.com/user-attachments/assets/1c090b64-712d-4187-91e5-d97ed291209b
 
 1. Download the latest release from https://github.com/JoshuaCarter/GAMMA-Radiation-Grain-Fix/releases
 2. Install with Mod Organizer 2 like any other mod
-4. Place this mod **below** other mods that change radiation postprocessing
+3. Place this mod **below** other mods that change radiation postprocessing
 
 ## Warnings!
 

@@ -2,6 +2,10 @@
 
 In **S.T.A.L.K.E.R. G.A.M.M.A.**, radiation screen grain is driven mainly by how radioactive your **location** is. That means you can get heavy grain in a hot zone even when your body radiation is still low — or grain that stays on in odd spots after you leave.
 
+## Demo
+
+https://github.com/user-attachments/assets/1c090b64-712d-4187-91e5-d97ed291209b
+
 ## What this mod does
 
 - Turns off the stock location-based radiation grain entirely

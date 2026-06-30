@@ -6,7 +6,8 @@ In **S.T.A.L.K.E.R. G.A.M.M.A.**, radiation screen grain is driven mainly by how
 
 - Turns off the stock location-based radiation grain entirely
 - Shows grain based on your **actual body radiation** instead
-- Lets you configure the **mSv thresholds** for each grain intensity
+- Scales grain **intensity** smoothly with body radiation (0–2000 mSv)
+- Lets you configure **min/max intensity** and an overall **intensity scale**
 
 ## Installation
 

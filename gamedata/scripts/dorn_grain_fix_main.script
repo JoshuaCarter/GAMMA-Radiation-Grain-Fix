@@ -7,31 +7,36 @@
 ]]
 
 local MOD_ID = "dorn_grain_fix"
-local PP_EFFECTOR_ID = 2021
-local PP_GRAIN_DBG_ID = 2022
+local PP_GRAIN_ID = 2021
+local PP_BLUR_ID = 2023
+local PP_DUAL_ID = 2024
 
 local GRAIN_PPES = {
-	"dorn_radiation_01.ppe",
-	"dorn_radiation_02.ppe",
-	"dorn_radiation_03.ppe",
-	"dorn_radiation_04.ppe",
-	"dorn_radiation_05.ppe",
-	"dorn_radiation_06.ppe",
-	"dorn_radiation_07.ppe",
-	"dorn_radiation_08.ppe",
-	"dorn_radiation_09.ppe",
-	"dorn_radiation_10.ppe",
+	"dorn_grain_01.ppe",
+	"dorn_grain_02.ppe",
+	"dorn_grain_03.ppe",
+	"dorn_grain_04.ppe",
+	"dorn_grain_05.ppe",
+	"dorn_grain_06.ppe",
+	"dorn_grain_07.ppe",
+	"dorn_grain_08.ppe",
+	"dorn_grain_09.ppe",
+	"dorn_grain_10.ppe",
 }
 
 local CONFIG = {}
 local GRAIN_LEVELS = {}
 local current_ppe = nil
+local blur_active = false
+local dual_active = false
 
 local LOG_TYPE = {
 	LIFECYCLE = {order = 0, color = "gray"},
 	RADS      = {order = 1, color = "green"},
 	MSV       = {order = 2, color = "yellow"},
-	EVENT     = {order = 3, color = "red"},
+	GRAIN     = {order = 3, color = "orange"},
+	BLUR      = {order = 4, color = "cyan"},
+	DUAL      = {order = 5, color = "purple"},
 }
 
 local function log(log_type, msg)
@@ -42,18 +47,22 @@ end
 
 local function on_option_change()
 	CONFIG.debug_log = _G.dorn_mcm.bool(MOD_ID, "development/debug_log", false)
+	CONFIG.grain_enabled = _G.dorn_mcm.bool(MOD_ID, "grain/enable", true)
+	CONFIG.blur_enabled = _G.dorn_mcm.bool(MOD_ID, "desaturation/enable", true)
+	CONFIG.dual_enabled = _G.dorn_mcm.bool(MOD_ID, "duality/enable", true)
 	CONFIG.level_msv = {}
-	CONFIG.level_msv[1] = _G.dorn_mcm.number(MOD_ID, "main/level_01_msv", 50)
-	CONFIG.level_msv[2] = _G.dorn_mcm.number(MOD_ID, "main/level_02_msv", 100)
-	CONFIG.level_msv[3] = _G.dorn_mcm.number(MOD_ID, "main/level_03_msv", 150)
-	CONFIG.level_msv[4] = _G.dorn_mcm.number(MOD_ID, "main/level_04_msv", 200)
-	CONFIG.level_msv[5] = _G.dorn_mcm.number(MOD_ID, "main/level_05_msv", 250)
-	CONFIG.level_msv[6] = _G.dorn_mcm.number(MOD_ID, "main/level_06_msv", 300)
-	CONFIG.level_msv[7] = _G.dorn_mcm.number(MOD_ID, "main/level_07_msv", 400)
-	CONFIG.level_msv[8] = _G.dorn_mcm.number(MOD_ID, "main/level_08_msv", 500)
-	CONFIG.level_msv[9] = _G.dorn_mcm.number(MOD_ID, "main/level_09_msv", 700)
-	CONFIG.level_msv[10] = _G.dorn_mcm.number(MOD_ID, "main/level_10_msv", 1000)
-	CONFIG.preview_grain_key = _G.dorn_mcm.key(MOD_ID, "development/preview_grain_key")
+	CONFIG.level_msv[1] = _G.dorn_mcm.number(MOD_ID, "grain/level_01_msv", 50)
+	CONFIG.level_msv[2] = _G.dorn_mcm.number(MOD_ID, "grain/level_02_msv", 100)
+	CONFIG.level_msv[3] = _G.dorn_mcm.number(MOD_ID, "grain/level_03_msv", 150)
+	CONFIG.level_msv[4] = _G.dorn_mcm.number(MOD_ID, "grain/level_04_msv", 250)
+	CONFIG.level_msv[5] = _G.dorn_mcm.number(MOD_ID, "grain/level_05_msv", 350)
+	CONFIG.level_msv[6] = _G.dorn_mcm.number(MOD_ID, "grain/level_06_msv", 450)
+	CONFIG.level_msv[7] = _G.dorn_mcm.number(MOD_ID, "grain/level_07_msv", 550)
+	CONFIG.level_msv[8] = _G.dorn_mcm.number(MOD_ID, "grain/level_08_msv", 700)
+	CONFIG.level_msv[9] = _G.dorn_mcm.number(MOD_ID, "grain/level_09_msv", 850)
+	CONFIG.level_msv[10] = _G.dorn_mcm.number(MOD_ID, "grain/level_10_msv", 1000)
+	CONFIG.blur_range = _G.dorn_mcm.range(MOD_ID, "desaturation/blur_min", "desaturation/blur_max", 500, 1000)
+	CONFIG.dual_range = _G.dorn_mcm.range(MOD_ID, "duality/dual_min", "duality/dual_max", 500, 1000)
 	CONFIG.add_radiation_key = _G.dorn_mcm.key(MOD_ID, "development/add_radiation_key")
 	CONFIG.clear_radiation_key = _G.dorn_mcm.key(MOD_ID, "development/clear_radiation_key")
 
@@ -65,16 +74,28 @@ local function on_option_change()
 	_G.dorn_dbg.set_enabled(MOD_ID, CONFIG.debug_log)
 end
 
-local function msv_to_ppe(msv)
+local function set_grain(msv)
+	if not CONFIG.grain_enabled then
+		if current_ppe then
+			level.remove_pp_effector(PP_GRAIN_ID)
+			current_ppe = nil
+		end
+		log(LOG_TYPE.GRAIN, "Grain: 0")
+		return
+	end
+
+	local ppe = nil
+	local tier = 0
 	for i = #GRAIN_PPES, 1, -1 do
 		if msv >= GRAIN_LEVELS[i].msv then
-			return GRAIN_PPES[i]
+			ppe = GRAIN_PPES[i]
+			tier = i
+			break
 		end
 	end
-	return nil
-end
 
-local function set_grain(ppe)
+	log(LOG_TYPE.GRAIN, string.format("Grain: %d", tier))
+
 	-- no change?
 	if ppe == current_ppe then
 		return
@@ -82,19 +103,77 @@ local function set_grain(ppe)
 
 	-- want no grain?
 	if ppe == nil and current_ppe then
-		log(LOG_TYPE.EVENT, "grain off")
-		level.remove_pp_effector(PP_EFFECTOR_ID)
+		level.remove_pp_effector(PP_GRAIN_ID)
 		current_ppe = nil
 		return
 	end
 
 	-- replace grain
-	log(LOG_TYPE.EVENT, "grain on " .. ppe)
-	if current_ppe then
-		level.remove_pp_effector(PP_EFFECTOR_ID)
+	if ppe then
+		if current_ppe then
+			level.remove_pp_effector(PP_GRAIN_ID)
+		end
+		level.add_pp_effector(ppe, PP_GRAIN_ID, true)
+		current_ppe = ppe
 	end
-	level.add_pp_effector(ppe, PP_EFFECTOR_ID, true)
-	current_ppe = ppe
+end
+
+local function set_blur(msv)
+	if not CONFIG.blur_enabled then
+		if blur_active then
+			level.remove_pp_effector(PP_BLUR_ID)
+			blur_active = false
+		end
+		log(LOG_TYPE.BLUR, "Blur: 0")
+		return
+	end
+
+	local intensity = CONFIG.blur_range:normalize(msv)
+	log(LOG_TYPE.BLUR, string.format("Blur: %.2f", intensity))
+
+	if intensity == 0 then
+		if blur_active then
+			level.remove_pp_effector(PP_BLUR_ID)
+			blur_active = false
+		end
+		return
+	end
+
+	if not blur_active then
+		level.add_pp_effector("dorn_blur.ppe", PP_BLUR_ID, true)
+		blur_active = true
+	end
+
+	level.set_pp_effector_factor(PP_BLUR_ID, intensity)
+end
+
+local function set_dual(msv)
+	if not CONFIG.dual_enabled then
+		if dual_active then
+			level.remove_pp_effector(PP_DUAL_ID)
+			dual_active = false
+		end
+		log(LOG_TYPE.DUAL, "Dual: 0")
+		return
+	end
+
+	local intensity = CONFIG.dual_range:normalize(msv)
+	log(LOG_TYPE.DUAL, string.format("Dual: %.2f", intensity))
+
+	if intensity == 0 then
+		if dual_active then
+			level.remove_pp_effector(PP_DUAL_ID)
+			dual_active = false
+		end
+		return
+	end
+
+	if not dual_active then
+		level.add_pp_effector("dorn_dual.ppe", PP_DUAL_ID, true)
+		dual_active = true
+	end
+
+	level.set_pp_effector_factor(PP_DUAL_ID, intensity)
 end
 
 local function on_actor_on_update()
@@ -104,26 +183,28 @@ local function on_actor_on_update()
 	end
 
 	if not actor:alive() then
-		level.remove_pp_effector(PP_EFFECTOR_ID)
-		level.remove_pp_effector(PP_GRAIN_DBG_ID)
+		level.remove_pp_effector(PP_GRAIN_ID)
+		level.remove_pp_effector(PP_BLUR_ID)
+		level.remove_pp_effector(PP_DUAL_ID)
 		current_ppe = nil
+		blur_active = false
+		dual_active = false
 		return
 	end
 
 	local radiation = actor.radiation or 0
 	local msv = radiation * 10000 * 0.387
-	local ppe = msv_to_ppe(msv)
 
 	log(LOG_TYPE.RADS, string.format("Rads: %.2f", radiation))
 	log(LOG_TYPE.MSV, string.format("MSV: %d", math.ceil(msv)))
 
-	set_grain(ppe)
+	set_grain(msv)
+	set_blur(msv)
+	set_dual(msv)
 end
 
 local function on_key_press(key)
-	if CONFIG.preview_grain_key and key == CONFIG.preview_grain_key then
-		level.add_pp_effector(GRAIN_PPES[10], PP_GRAIN_DBG_ID, false)
-	elseif CONFIG.add_radiation_key and key == CONFIG.add_radiation_key and db.actor then
+	if CONFIG.add_radiation_key and key == CONFIG.add_radiation_key and db.actor then
 		db.actor.radiation = (db.actor.radiation or 0) + 50 / (10000 * 0.387)
 	elseif CONFIG.clear_radiation_key and key == CONFIG.clear_radiation_key and db.actor then
 		db.actor.radiation = 0
@@ -132,6 +213,8 @@ end
 
 function on_game_start()
 	current_ppe = nil
+	blur_active = false
+	dual_active = false
 	RegisterScriptCallback("actor_on_update", on_actor_on_update)
 	RegisterScriptCallback("on_option_change", on_option_change)
 	RegisterScriptCallback("on_key_press", on_key_press)

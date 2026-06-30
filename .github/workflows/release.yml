@@ -48,6 +48,7 @@ jobs:
           mkdir -p gamedata/scripts
           cp GAMMA-common/gamedata/scripts/dorn_dbg.script \
              GAMMA-common/gamedata/scripts/dorn_mcm.script \
+             GAMMA-common/gamedata/scripts/dorn_sys.script \
              gamedata/scripts/
 
       - name: Build mod zip

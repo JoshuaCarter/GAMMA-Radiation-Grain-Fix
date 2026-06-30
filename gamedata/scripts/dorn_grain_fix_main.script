@@ -2,157 +2,136 @@
 	Dorn's Radiation Grain Fix
 
 	Replaces stock radiation.ppe with a no-op so zone/location radiation postprocesses
-	draw nothing. This script applies our own grain PPE from player body radiation
-	(db.actor.radiation), scaling intensity from 0-2000 mSv.
+	draw nothing. This script applies our own graded grain PPEs from player body
+	radiation (db.actor.radiation).
 ]]
 
 local MOD_ID = "dorn_grain_fix"
-local PP_GRAIN_ID = 2021
+local PP_EFFECTOR_ID = 2021
 local PP_GRAIN_DBG_ID = 2022
-local GRAIN_PPE = "dorn_radiation.ppe"
-local MSV_MAX = 2000
 
-local CONFIG = {
-	debug_log = false,
-	intensity_scale = 1,
-	min_intensity = 0,
-	max_intensity = 1,
-	preview_grain_key = nil,
-	add_radiation_key = nil,
+local GRAIN_PPES = {
+	"dorn_radiation_01.ppe",
+	"dorn_radiation_02.ppe",
+	"dorn_radiation_03.ppe",
+	"dorn_radiation_04.ppe",
+	"dorn_radiation_05.ppe",
+	"dorn_radiation_06.ppe",
+	"dorn_radiation_07.ppe",
+	"dorn_radiation_08.ppe",
+	"dorn_radiation_09.ppe",
+	"dorn_radiation_10.ppe",
 }
 
-local grain_active = false
+local CONFIG = {}
+local GRAIN_LEVELS = {}
+local current_ppe = nil
 
 local LOG_TYPE = {
 	LIFECYCLE = {order = 0, color = "gray"},
-	RAD       = {order = 1, color = "green"},
-	GRAIN     = {order = 2, color = "yellow"},
+	RADS      = {order = 1, color = "green"},
+	MSV       = {order = 2, color = "yellow"},
+	EVENT     = {order = 3, color = "red"},
 }
 
 local function log(log_type, msg)
 	if _G.dorn_dbg then
-		local slot = log_type or LOG_TYPE.LIFECYCLE
-		local colors = _G.dorn_dbg.COLORS
-		_G.dorn_dbg.write(MOD_ID, slot.order, "[GrainFix] " .. tostring(msg), colors and colors[slot.color])
+		_G.dorn_dbg.log(MOD_ID, log_type or LOG_TYPE.LIFECYCLE, msg, "GrainFix")
 	end
 end
 
-local function radiation_effect_enabled()
-	if ui_options then
-		return ui_options.get("video/player/radiation_effect") ~= false
+local function on_option_change()
+	CONFIG.debug_log = _G.dorn_mcm.bool(MOD_ID, "development/debug_log", false)
+	CONFIG.level_msv = {}
+	CONFIG.level_msv[1] = _G.dorn_mcm.number(MOD_ID, "main/level_01_msv", 50)
+	CONFIG.level_msv[2] = _G.dorn_mcm.number(MOD_ID, "main/level_02_msv", 100)
+	CONFIG.level_msv[3] = _G.dorn_mcm.number(MOD_ID, "main/level_03_msv", 150)
+	CONFIG.level_msv[4] = _G.dorn_mcm.number(MOD_ID, "main/level_04_msv", 200)
+	CONFIG.level_msv[5] = _G.dorn_mcm.number(MOD_ID, "main/level_05_msv", 250)
+	CONFIG.level_msv[6] = _G.dorn_mcm.number(MOD_ID, "main/level_06_msv", 300)
+	CONFIG.level_msv[7] = _G.dorn_mcm.number(MOD_ID, "main/level_07_msv", 400)
+	CONFIG.level_msv[8] = _G.dorn_mcm.number(MOD_ID, "main/level_08_msv", 500)
+	CONFIG.level_msv[9] = _G.dorn_mcm.number(MOD_ID, "main/level_09_msv", 700)
+	CONFIG.level_msv[10] = _G.dorn_mcm.number(MOD_ID, "main/level_10_msv", 1000)
+	CONFIG.preview_grain_key = _G.dorn_mcm.key(MOD_ID, "development/preview_grain_key")
+	CONFIG.add_radiation_key = _G.dorn_mcm.key(MOD_ID, "development/add_radiation_key")
+	CONFIG.clear_radiation_key = _G.dorn_mcm.key(MOD_ID, "development/clear_radiation_key")
+
+	GRAIN_LEVELS = {}
+	for i, ppe in ipairs(GRAIN_PPES) do
+		table.insert(GRAIN_LEVELS, { msv = CONFIG.level_msv[i], ppe = ppe })
 	end
-	return true
+
+	_G.dorn_dbg.set_enabled(MOD_ID, CONFIG.debug_log)
 end
 
-local function get_player_radiation(actor)
+local function msv_to_ppe(msv)
+	for i = #GRAIN_PPES, 1, -1 do
+		if msv >= GRAIN_LEVELS[i].msv then
+			return GRAIN_PPES[i]
+		end
+	end
+	return nil
+end
+
+local function set_grain(ppe)
+	-- no change?
+	if ppe == current_ppe then
+		return
+	end
+
+	-- want no grain?
+	if ppe == nil and current_ppe then
+		log(LOG_TYPE.EVENT, "grain off")
+		level.remove_pp_effector(PP_EFFECTOR_ID)
+		current_ppe = nil
+		return
+	end
+
+	-- replace grain
+	log(LOG_TYPE.EVENT, "grain on " .. ppe)
+	if current_ppe then
+		level.remove_pp_effector(PP_EFFECTOR_ID)
+	end
+	level.add_pp_effector(ppe, PP_EFFECTOR_ID, true)
+	current_ppe = ppe
+end
+
+local function on_actor_on_update()
+	local _, actor = _G.dorn_sys.ready(MOD_ID, db, on_option_change)
 	if not actor then
-		return 0
-	end
-	local ok, radiation = pcall(function()
-		return actor.radiation
-	end)
-	if not ok or not radiation or radiation <= 0 then
-		return 0
-	end
-	return radiation
-end
-
-local function radiation_to_msv(radiation)
-	return radiation * 10000 * 0.387
-end
-
-local function set_grain(active)
-	if active == grain_active then
-		return
-	end
-	level.remove_pp_effector(PP_GRAIN_ID)
-	if active then
-		level.add_pp_effector(GRAIN_PPE, PP_GRAIN_ID, true)
-	end
-	grain_active = active
-end
-
-local function apply_grain(actor)
-	if not actor then
 		return
 	end
 
-	if not radiation_effect_enabled() then
-		set_grain(false)
+	if not actor:alive() then
+		level.remove_pp_effector(PP_EFFECTOR_ID)
+		level.remove_pp_effector(PP_GRAIN_DBG_ID)
+		current_ppe = nil
 		return
 	end
 
-	local radiation = get_player_radiation(actor)
-	local msv = radiation_to_msv(radiation)
+	local radiation = actor.radiation or 0
+	local msv = radiation * 10000 * 0.387
+	local ppe = msv_to_ppe(msv)
 
-	log(LOG_TYPE.RAD, string.format("player rad: %.4f (%d mSv)", radiation, math.ceil(msv)))
+	log(LOG_TYPE.RADS, string.format("Rads: %.2f", radiation))
+	log(LOG_TYPE.MSV, string.format("MSV: %d", math.ceil(msv)))
 
-	if msv <= 0 then
-		set_grain(false)
-		log(LOG_TYPE.GRAIN, "grain off")
-		return
-	end
-
-	local base = msv / MSV_MAX
-	if base > 1 then
-		base = 1
-	end
-	local intensity = CONFIG.min_intensity + base * (CONFIG.max_intensity - CONFIG.min_intensity)
-	intensity = intensity * CONFIG.intensity_scale
-	if intensity > 1 then
-		intensity = 1
-	elseif intensity < 0 then
-		intensity = 0
-	end
-
-	if intensity <= 0 then
-		set_grain(false)
-		log(LOG_TYPE.GRAIN, "grain off")
-		return
-	end
-
-	set_grain(true)
-	level.set_pp_effector_factor(PP_GRAIN_ID, intensity)
-	log(LOG_TYPE.GRAIN, string.format("grain %.3f (%d mSv)", intensity, math.ceil(msv)))
+	set_grain(ppe)
 end
 
 local function on_key_press(key)
 	if CONFIG.preview_grain_key and key == CONFIG.preview_grain_key then
-		level.add_pp_effector(GRAIN_PPE, PP_GRAIN_DBG_ID, false)
-		level.set_pp_effector_factor(PP_GRAIN_DBG_ID, math.min(1, CONFIG.max_intensity * CONFIG.intensity_scale))
+		level.add_pp_effector(GRAIN_PPES[10], PP_GRAIN_DBG_ID, false)
 	elseif CONFIG.add_radiation_key and key == CONFIG.add_radiation_key and db.actor then
-		db.actor.radiation = (db.actor.radiation or 0) + 100 / (10000 * 0.387)
-	end
-end
-
-local function on_actor_on_update()
-	local actor = db.actor
-	if not actor then
-		return
-	end
-	apply_grain(actor)
-end
-
-local function on_option_change()
-	if _G.dorn_mcm then
-		CONFIG.debug_log = _G.dorn_mcm.bool(MOD_ID, "development/debug_log", false)
-		CONFIG.intensity_scale = _G.dorn_mcm.number(MOD_ID, "main/intensity_scale", 1)
-		CONFIG.min_intensity = _G.dorn_mcm.number(MOD_ID, "main/min_intensity", 0)
-		CONFIG.max_intensity = _G.dorn_mcm.number(MOD_ID, "main/max_intensity", 1)
-		CONFIG.preview_grain_key = _G.dorn_mcm.key(MOD_ID, "development/preview_grain_key")
-		CONFIG.add_radiation_key = _G.dorn_mcm.key(MOD_ID, "development/add_radiation_key")
-	end
-
-	if _G.dorn_dbg then
-		_G.dorn_dbg.set_enabled(MOD_ID, CONFIG.debug_log)
+		db.actor.radiation = (db.actor.radiation or 0) + 50 / (10000 * 0.387)
+	elseif CONFIG.clear_radiation_key and key == CONFIG.clear_radiation_key and db.actor then
+		db.actor.radiation = 0
 	end
 end
 
 function on_game_start()
-	level.remove_pp_effector(PP_GRAIN_ID)
-	level.remove_pp_effector(PP_GRAIN_DBG_ID)
-	grain_active = false
-	on_option_change()
+	current_ppe = nil
 	RegisterScriptCallback("actor_on_update", on_actor_on_update)
 	RegisterScriptCallback("on_option_change", on_option_change)
 	RegisterScriptCallback("on_key_press", on_key_press)

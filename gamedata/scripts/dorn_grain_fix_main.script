@@ -7,7 +7,7 @@
 ]]
 
 local MOD_ID = "dorn_grain_fix"
-local COMMON = "dorn_common_0122c2dd" -- bump via sync-dorn-common.sh
+local DORN_COMMON_VERSION = "dorn_common_7367f5e7" -- managed by sync-dorn-common.sh, do not hand-edit
 
 local DORN
 
@@ -216,7 +216,7 @@ local function on_key_press(key)
 end
 
 function on_game_start()
-	DORN = _G[COMMON].load(MOD_ID)
+	DORN = _G[DORN_COMMON_VERSION].load(MOD_ID)
 
 	current_ppe = nil
 	blur_active = false

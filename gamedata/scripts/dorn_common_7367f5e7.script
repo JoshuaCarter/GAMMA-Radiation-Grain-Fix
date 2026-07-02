@@ -1,9 +1,9 @@
 --[[
-	Dorn common loader for commit 0122c2dd.
+	Dorn common loader for commit 7367f5e7.
 
-	Synced verbatim (only 0122c2dd is substituted) alongside
-	dorn_mcm_0122c2dd / dorn_dbg_0122c2dd / dorn_sys_0122c2dd as
-	dorn_common_0122c2dd.script. X-Ray auto-loads every .script file in
+	Synced verbatim (only 7367f5e7 is substituted) alongside
+	dorn_mcm_7367f5e7 / dorn_dbg_7367f5e7 / dorn_sys_7367f5e7 as
+	dorn_common_7367f5e7.script. X-Ray auto-loads every .script file in
 	gamedata/scripts at boot, so this and its 3 siblings are already loaded
 	globals by the time any mod's on_game_start() runs — no process_file()
 	call needed (or safe: calling process_file() from a script that's
@@ -14,21 +14,23 @@
 	Usage from a mod's _main.script:
 
 		local MOD_ID = "dorn_prone_fix"
-		local COMMON = "dorn_common_0122c2dd" -- bump via sync-dorn-common.sh
+		local DORN_COMMON_VERSION = "dorn_common_7367f5e7" -- managed by sync-dorn-common.sh, do not hand-edit
 
 		local DORN
 
 		function on_game_start()
-			DORN = _G[COMMON].load(MOD_ID)
+			DORN = _G[DORN_COMMON_VERSION].load(MOD_ID)
 			-- ...
 		end
 
-	Resolve via _G[COMMON] and call load() inside on_game_start() only —
+	sync-dorn-common.sh rewrites the DORN_COMMON_VERSION string in place on
+	every sync — there's nothing to bump by hand. Resolve via
+	_G[DORN_COMMON_VERSION] and call load() inside on_game_start() only —
 	never at the top level of the script, since load order across
 	auto-loaded files isn't guaranteed there.
 ]]
 
-local SUFFIX = "_0122c2dd"
+local SUFFIX = "_7367f5e7"
 
 function load(mod_id)
 	local mcm = _G["dorn_mcm" .. SUFFIX]
@@ -39,6 +41,6 @@ function load(mod_id)
 		sys.reset_mod(mod_id)
 		dbg.clear_source(mod_id)
 	end
-	printf("[DORN] %s: common loaded (commit 0122c2dd)", tostring(mod_id))
+	printf("[DORN] %s: common loaded (commit 7367f5e7)", tostring(mod_id))
 	return { mcm = mcm, dbg = dbg, sys = sys }
 end

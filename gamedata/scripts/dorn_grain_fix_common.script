@@ -1,26 +1,23 @@
--- dorn-common-commit: 8a2488f8
---[[ AUTO-GENERATED — synced from GAMMA-Common (common_8a2488f8) ]]
+-- dorn-common-commit: e96dd465
+--[[ AUTO-GENERATED — synced from GAMMA-Common, commit e96dd465 ]]
 
-local COMMON_DIR = "common_8a2488f8"
+local SUFFIX = "_e96dd465"
 
-process_file(COMMON_DIR .. "/dorn_mcm")
-process_file(COMMON_DIR .. "/dorn_dbg")
-process_file(COMMON_DIR .. "/dorn_sys")
+process_file("dorn_mcm" .. SUFFIX)
+process_file("dorn_dbg" .. SUFFIX)
+process_file("dorn_sys" .. SUFFIX)
 
-local mcm = _G[COMMON_DIR .. "/dorn_mcm"]
-local dbg = _G[COMMON_DIR .. "/dorn_dbg"]
-local sys = _G[COMMON_DIR .. "/dorn_sys"]
+local mcm = _G["dorn_mcm" .. SUFFIX]
+local dbg = _G["dorn_dbg" .. SUFFIX]
+local sys = _G["dorn_sys" .. SUFFIX]
 
 sys.set_deps(mcm, dbg)
 
-function path()
-	return COMMON_DIR
-end
+printf("[DORN] dorn_grain_fix: common loaded (commit e96dd465)")
 
 function get()
 	return {
-		COMMIT = "8a2488f8",
-		COMMON_DIR = COMMON_DIR,
+		COMMIT = "e96dd465",
 		mcm = mcm,
 		dbg = dbg,
 		sys = sys,

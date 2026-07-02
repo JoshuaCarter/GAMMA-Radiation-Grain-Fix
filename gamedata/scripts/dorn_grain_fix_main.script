@@ -7,9 +7,9 @@
 ]]
 
 local MOD_ID = "dorn_grain_fix"
+local COMMON = "dorn_common_e96dd465" -- bump via sync-dorn-common.sh
 
-process_file("dorn_grain_fix_common")
-local DORN = dorn_grain_fix_common.get()
+local DORN
 
 local PP_GRAIN_ID = 2021
 local PP_BLUR_ID = 2023
@@ -216,7 +216,7 @@ local function on_key_press(key)
 end
 
 function on_game_start()
-	dorn_grain_fix_common.init(MOD_ID)
+	DORN = _G[COMMON].load(MOD_ID)
 
 	current_ppe = nil
 	blur_active = false

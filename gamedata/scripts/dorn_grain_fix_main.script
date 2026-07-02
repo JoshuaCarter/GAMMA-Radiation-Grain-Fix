@@ -7,7 +7,7 @@
 ]]
 
 local MOD_ID = "dorn_grain_fix"
-local COMMON = "dorn_common_e96dd465" -- bump via sync-dorn-common.sh
+local COMMON = "dorn_common_0122c2dd" -- bump via sync-dorn-common.sh
 
 local DORN
 

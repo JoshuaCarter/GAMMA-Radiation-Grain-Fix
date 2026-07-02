@@ -13,8 +13,3 @@ Desktop.ini
 # Log files
 *.log
 **/logs/
-
-# Vendored from GAMMA-common submodule (runtime: use MO2 Dorns_Common)
-gamedata/scripts/dorn_dbg.script
-gamedata/scripts/dorn_mcm.script
-gamedata/scripts/dorn_sys.script

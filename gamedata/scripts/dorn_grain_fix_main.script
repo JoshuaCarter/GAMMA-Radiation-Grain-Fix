@@ -7,6 +7,10 @@
 ]]
 
 local MOD_ID = "dorn_grain_fix"
+
+process_file("dorn_grain_fix_common")
+local DORN = dorn_grain_fix_common.get()
+
 local PP_GRAIN_ID = 2021
 local PP_BLUR_ID = 2023
 local PP_DUAL_ID = 2024
@@ -40,38 +44,38 @@ local LOG_TYPE = {
 }
 
 local function log(log_type, msg)
-	if _G.dorn_dbg then
-		_G.dorn_dbg.log(MOD_ID, log_type or LOG_TYPE.LIFECYCLE, msg, "GrainFix")
+	if DORN.dbg then
+		DORN.dbg.log(MOD_ID, log_type or LOG_TYPE.LIFECYCLE, msg, "GrainFix")
 	end
 end
 
 local function on_option_change()
-	CONFIG.debug_log = _G.dorn_mcm.bool(MOD_ID, "development/debug_log", false)
-	CONFIG.grain_enabled = _G.dorn_mcm.bool(MOD_ID, "grain/enable", true)
-	CONFIG.blur_enabled = _G.dorn_mcm.bool(MOD_ID, "desaturation/enable", true)
-	CONFIG.dual_enabled = _G.dorn_mcm.bool(MOD_ID, "duality/enable", true)
+	CONFIG.debug_log = DORN.mcm.bool(MOD_ID, "development/debug_log", false)
+	CONFIG.grain_enabled = DORN.mcm.bool(MOD_ID, "grain/enable", true)
+	CONFIG.blur_enabled = DORN.mcm.bool(MOD_ID, "desaturation/enable", true)
+	CONFIG.dual_enabled = DORN.mcm.bool(MOD_ID, "duality/enable", true)
 	CONFIG.level_msv = {}
-	CONFIG.level_msv[1] = _G.dorn_mcm.number(MOD_ID, "grain/level_01_msv", 50)
-	CONFIG.level_msv[2] = _G.dorn_mcm.number(MOD_ID, "grain/level_02_msv", 100)
-	CONFIG.level_msv[3] = _G.dorn_mcm.number(MOD_ID, "grain/level_03_msv", 150)
-	CONFIG.level_msv[4] = _G.dorn_mcm.number(MOD_ID, "grain/level_04_msv", 250)
-	CONFIG.level_msv[5] = _G.dorn_mcm.number(MOD_ID, "grain/level_05_msv", 350)
-	CONFIG.level_msv[6] = _G.dorn_mcm.number(MOD_ID, "grain/level_06_msv", 450)
-	CONFIG.level_msv[7] = _G.dorn_mcm.number(MOD_ID, "grain/level_07_msv", 550)
-	CONFIG.level_msv[8] = _G.dorn_mcm.number(MOD_ID, "grain/level_08_msv", 700)
-	CONFIG.level_msv[9] = _G.dorn_mcm.number(MOD_ID, "grain/level_09_msv", 850)
-	CONFIG.level_msv[10] = _G.dorn_mcm.number(MOD_ID, "grain/level_10_msv", 1000)
-	CONFIG.blur_range = _G.dorn_mcm.range(MOD_ID, "desaturation/blur_min", "desaturation/blur_max", 500, 2000)
-	CONFIG.dual_range = _G.dorn_mcm.range(MOD_ID, "duality/dual_min", "duality/dual_max", 1000, 2000)
-	CONFIG.add_radiation_key = _G.dorn_mcm.key(MOD_ID, "development/add_radiation_key")
-	CONFIG.clear_radiation_key = _G.dorn_mcm.key(MOD_ID, "development/clear_radiation_key")
+	CONFIG.level_msv[1] = DORN.mcm.number(MOD_ID, "grain/level_01_msv", 50)
+	CONFIG.level_msv[2] = DORN.mcm.number(MOD_ID, "grain/level_02_msv", 100)
+	CONFIG.level_msv[3] = DORN.mcm.number(MOD_ID, "grain/level_03_msv", 150)
+	CONFIG.level_msv[4] = DORN.mcm.number(MOD_ID, "grain/level_04_msv", 250)
+	CONFIG.level_msv[5] = DORN.mcm.number(MOD_ID, "grain/level_05_msv", 350)
+	CONFIG.level_msv[6] = DORN.mcm.number(MOD_ID, "grain/level_06_msv", 450)
+	CONFIG.level_msv[7] = DORN.mcm.number(MOD_ID, "grain/level_07_msv", 550)
+	CONFIG.level_msv[8] = DORN.mcm.number(MOD_ID, "grain/level_08_msv", 700)
+	CONFIG.level_msv[9] = DORN.mcm.number(MOD_ID, "grain/level_09_msv", 850)
+	CONFIG.level_msv[10] = DORN.mcm.number(MOD_ID, "grain/level_10_msv", 1000)
+	CONFIG.blur_range = DORN.mcm.range(MOD_ID, "desaturation/blur_min", "desaturation/blur_max", 500, 2000)
+	CONFIG.dual_range = DORN.mcm.range(MOD_ID, "duality/dual_min", "duality/dual_max", 1000, 2000)
+	CONFIG.add_radiation_key = DORN.mcm.key(MOD_ID, "development/add_radiation_key")
+	CONFIG.clear_radiation_key = DORN.mcm.key(MOD_ID, "development/clear_radiation_key")
 
 	GRAIN_LEVELS = {}
 	for i, ppe in ipairs(GRAIN_PPES) do
 		table.insert(GRAIN_LEVELS, { msv = CONFIG.level_msv[i], ppe = ppe })
 	end
 
-	_G.dorn_dbg.set_enabled(MOD_ID, CONFIG.debug_log)
+	DORN.dbg.set_enabled(MOD_ID, CONFIG.debug_log)
 end
 
 local function set_grain(msv)
@@ -177,7 +181,7 @@ local function set_dual(msv)
 end
 
 local function on_actor_on_update()
-	local _, actor = _G.dorn_sys.ready(MOD_ID, db, on_option_change)
+	local _, actor = DORN.sys.ready(MOD_ID, db, on_option_change)
 	if not actor then
 		return
 	end
@@ -212,6 +216,8 @@ local function on_key_press(key)
 end
 
 function on_game_start()
+	dorn_grain_fix_common.init(MOD_ID)
+
 	current_ppe = nil
 	blur_active = false
 	dual_active = false

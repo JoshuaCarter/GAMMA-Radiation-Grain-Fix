@@ -15,7 +15,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          submodules: recursive
 
       - name: Read version from meta.ini
         id: meta
@@ -41,10 +40,6 @@ jobs:
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Vendor GAMMA-common gamedata
-        if: steps.check.outputs.exists == 'false'
-        run: bash GAMMA-common/tools/vendor-gamedata.sh gamedata
 
       - name: Build mod zip
         if: steps.check.outputs.exists == 'false'

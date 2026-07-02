@@ -1,4 +1,0 @@
-[submodule "GAMMA-common"]
-	path = GAMMA-common
-	url = https://github.com/JoshuaCarter/GAMMA-Common.git
-	branch = main

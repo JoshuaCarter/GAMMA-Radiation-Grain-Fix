@@ -220,6 +220,13 @@ function on_mcm_load()
 						hint = "dorn_grain_fix_clear_radiation_key",
 					},
 					{
+						id = "debug_overlay",
+						type = "check",
+						val = 1,
+						def = false,
+						hint = "dorn_grain_fix_debug_overlay",
+					},
+					{
 						id = "debug_log",
 						type = "check",
 						val = 1,

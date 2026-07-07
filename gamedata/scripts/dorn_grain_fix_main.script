@@ -7,7 +7,7 @@
 ]]
 
 local MOD_ID = "dorn_grain_fix"
-local DORN_COMMON_VERSION = "dorn_common_7367f5e7" -- managed by sync-dorn-common.sh, do not hand-edit
+local DORN_COMMON_VERSION = "dorn_common_3ea88f51" -- managed by sync-dorn-common.sh, do not hand-edit
 
 local DORN
 
@@ -44,13 +44,20 @@ local LOG_TYPE = {
 }
 
 local function log(log_type, msg)
-	if DORN.dbg then
-		DORN.dbg.log(MOD_ID, log_type or LOG_TYPE.LIFECYCLE, msg, "GrainFix")
+	if not DORN.dbg then
+		return
+	end
+	if CONFIG.debug_overlay then
+		DORN.dbg.overlay(MOD_ID, log_type or LOG_TYPE.LIFECYCLE, msg, "GrainFix")
+	end
+	if CONFIG.debug_log then
+		DORN.dbg.log(MOD_ID, tostring(msg))
 	end
 end
 
 local function on_option_change()
 	CONFIG.debug_log = DORN.mcm.bool(MOD_ID, "development/debug_log", false)
+	CONFIG.debug_overlay = DORN.mcm.bool(MOD_ID, "development/debug_overlay", false)
 	CONFIG.grain_enabled = DORN.mcm.bool(MOD_ID, "grain/enable", true)
 	CONFIG.blur_enabled = DORN.mcm.bool(MOD_ID, "desaturation/enable", true)
 	CONFIG.dual_enabled = DORN.mcm.bool(MOD_ID, "duality/enable", true)
@@ -75,7 +82,7 @@ local function on_option_change()
 		table.insert(GRAIN_LEVELS, { msv = CONFIG.level_msv[i], ppe = ppe })
 	end
 
-	DORN.dbg.set_enabled(MOD_ID, CONFIG.debug_log)
+	DORN.dbg.set_enabled(MOD_ID, CONFIG.debug_overlay)
 end
 
 local function set_grain(msv)

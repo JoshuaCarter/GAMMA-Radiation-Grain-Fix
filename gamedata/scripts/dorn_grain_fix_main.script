@@ -43,12 +43,20 @@ local LOG_TYPE = {
 	DUAL      = {order = 5, color = "purple"},
 }
 
-local function log(log_type, msg)
+-- HUD-only: for values that change every frame (Rads/MSV/Grain/Blur/Dual).
+local function overlay(log_type, msg)
 	if not DORN.dbg then
 		return
 	end
 	if CONFIG.debug_overlay then
 		DORN.dbg.overlay(MOD_ID, log_type or LOG_TYPE.LIFECYCLE, msg, "GrainFix")
+	end
+end
+
+-- File-only: for one-off/lifecycle events worth keeping in the log.
+local function log(msg)
+	if not DORN.dbg then
+		return
 	end
 	if CONFIG.debug_log then
 		DORN.dbg.log(MOD_ID, tostring(msg))
@@ -91,7 +99,7 @@ local function set_grain(msv)
 			level.remove_pp_effector(PP_GRAIN_ID)
 			current_ppe = nil
 		end
-		log(LOG_TYPE.GRAIN, "Grain: 0")
+		overlay(LOG_TYPE.GRAIN, "Grain: 0")
 		return
 	end
 
@@ -105,7 +113,7 @@ local function set_grain(msv)
 		end
 	end
 
-	log(LOG_TYPE.GRAIN, string.format("Grain: %d", tier))
+	overlay(LOG_TYPE.GRAIN, string.format("Grain: %d", tier))
 
 	-- no change?
 	if ppe == current_ppe then
@@ -135,12 +143,12 @@ local function set_blur(msv)
 			level.remove_pp_effector(PP_BLUR_ID)
 			blur_active = false
 		end
-		log(LOG_TYPE.BLUR, "Blur: 0")
+		overlay(LOG_TYPE.BLUR, "Blur: 0")
 		return
 	end
 
 	local intensity = CONFIG.blur_range:normalize(msv)
-	log(LOG_TYPE.BLUR, string.format("Blur: %.2f", intensity))
+	overlay(LOG_TYPE.BLUR, string.format("Blur: %.2f", intensity))
 
 	if intensity == 0 then
 		if blur_active then
@@ -164,12 +172,12 @@ local function set_dual(msv)
 			level.remove_pp_effector(PP_DUAL_ID)
 			dual_active = false
 		end
-		log(LOG_TYPE.DUAL, "Dual: 0")
+		overlay(LOG_TYPE.DUAL, "Dual: 0")
 		return
 	end
 
 	local intensity = CONFIG.dual_range:normalize(msv)
-	log(LOG_TYPE.DUAL, string.format("Dual: %.2f", intensity))
+	overlay(LOG_TYPE.DUAL, string.format("Dual: %.2f", intensity))
 
 	if intensity == 0 then
 		if dual_active then
@@ -206,8 +214,8 @@ local function on_actor_on_update()
 	local radiation = actor.radiation or 0
 	local msv = radiation * 10000 * 0.387
 
-	log(LOG_TYPE.RADS, string.format("Rads: %.2f", radiation))
-	log(LOG_TYPE.MSV, string.format("MSV: %d", math.ceil(msv)))
+	overlay(LOG_TYPE.RADS, string.format("Rads: %.2f", radiation))
+	overlay(LOG_TYPE.MSV, string.format("MSV: %d", math.ceil(msv)))
 
 	set_grain(msv)
 	set_blur(msv)
@@ -231,5 +239,5 @@ function on_game_start()
 	RegisterScriptCallback("actor_on_update", on_actor_on_update)
 	RegisterScriptCallback("on_option_change", on_option_change)
 	RegisterScriptCallback("on_key_press", on_key_press)
-	log(LOG_TYPE.LIFECYCLE, "loaded")
+	log("loaded")
 end

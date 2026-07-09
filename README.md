@@ -1,4 +1,4 @@
-# GAMMA Radiation Grain Fix v0.2.4
+# Dorn's Radiation Grain Fix v0.2.4
 
 In **S.T.A.L.K.E.R. G.A.M.M.A.**, radiation FX is driven mainly by how radioactive your **location** is. That means you can get heavy grain in a hot zone even when your body radiation is still low. Also current effects don't play well with dynamic radiation patches. This mod **actually** lets you turn off the radiation effects (or use the better and more customizable effects included in this mod).
 

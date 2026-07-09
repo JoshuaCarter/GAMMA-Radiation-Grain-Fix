@@ -87,7 +87,7 @@ local function on_option_change()
 
 	GRAIN_LEVELS = {}
 	for i, ppe in ipairs(GRAIN_PPES) do
-		table.insert(GRAIN_LEVELS, { msv = CONFIG.level_msv[i], ppe = ppe })
+		GRAIN_LEVELS[#GRAIN_LEVELS+1] = { msv = CONFIG.level_msv[i], ppe = ppe }
 	end
 
 	DORN.dbg.set_enabled(MOD_ID, CONFIG.debug_overlay)

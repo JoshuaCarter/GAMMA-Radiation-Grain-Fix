@@ -1,4 +1,4 @@
-# GAMMA Radiation Grain Fix
+# GAMMA Radiation Grain Fix v0.2.4
 
 In **S.T.A.L.K.E.R. G.A.M.M.A.**, radiation FX is driven mainly by how radioactive your **location** is. That means you can get heavy grain in a hot zone even when your body radiation is still low. Also current effects don't play well with dynamic radiation patches. This mod **actually** lets you turn off the radiation effects (or use the better and more customizable effects included in this mod).
 
@@ -21,3 +21,14 @@ https://github.com/user-attachments/assets/1c090b64-712d-4187-91e5-d97ed291209b
 ## Warnings!
 
 - This mod **replaces** `gamedata/anims/radiation.ppe` with a blank version. Anything that uses the stock radiation postprocess file will no longer show grain from that path — including zone radiation, dynamic rad areas, and the vanilla radiation effect script.
+
+## Other mods
+
+- https://github.com/JoshuaCarter/GAMMA-Dont-ReEquip-PDA
+- https://github.com/JoshuaCarter/GAMMA-Faster-Skinning
+- https://github.com/JoshuaCarter/GAMMA-Field-Strip-All-Keybind
+- https://github.com/JoshuaCarter/GAMMA-FPS-Counter
+- https://github.com/JoshuaCarter/GAMMA-Giant-Jump
+- https://github.com/JoshuaCarter/GAMMA-Optimal-Tool-Use
+- https://github.com/JoshuaCarter/GAMMA-Prone-Fix
+- https://github.com/JoshuaCarter/GAMMA-Tooltip-Weapon-Damage

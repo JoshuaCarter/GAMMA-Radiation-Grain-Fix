@@ -1,7 +1,7 @@
 function on_mcm_load()
 	return {
 		id = "dorn_grain_fix",
-		text = "Dorn's Radiation Grain Fix",
+		text = "ui_mcm_menu_dorn_grain_fix",
 		gr = {
 			{
 				id = "grain",

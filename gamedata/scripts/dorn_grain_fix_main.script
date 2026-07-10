@@ -34,7 +34,7 @@ local current_ppe = nil
 local blur_active = false
 local dual_active = false
 
-local LOG_TYPE = {
+local LOG = {
 	LIFECYCLE = {order = 0, color = "gray"},
 	RADS      = {order = 1, color = "green"},
 	MSV       = {order = 2, color = "yellow"},
@@ -49,7 +49,8 @@ local function overlay(log_type, msg)
 		return
 	end
 	if CONFIG.debug_overlay then
-		DORN.dbg.overlay(MOD_ID, log_type or LOG_TYPE.LIFECYCLE, msg, "GrainFix")
+		local slot = log_type or LOG.LIFECYCLE
+		DORN.dbg.overlay(MOD_ID, slot.order, tostring(msg), slot.color)
 	end
 end
 
@@ -99,21 +100,22 @@ local function set_grain(msv)
 			level.remove_pp_effector(PP_GRAIN_ID)
 			current_ppe = nil
 		end
-		overlay(LOG_TYPE.GRAIN, "Grain: 0")
+		overlay(LOG.GRAIN, "Grain: 0")
 		return
 	end
 
 	local ppe = nil
 	local tier = 0
-	for i = #GRAIN_PPES, 1, -1 do
-		if msv >= GRAIN_LEVELS[i].msv then
-			ppe = GRAIN_PPES[i]
+	for i = #GRAIN_LEVELS, 1, -1 do
+		local level = GRAIN_LEVELS[i]
+		if msv >= level.msv then
+			ppe = level.ppe
 			tier = i
 			break
 		end
 	end
 
-	overlay(LOG_TYPE.GRAIN, string.format("Grain: %d", tier))
+	overlay(LOG.GRAIN, string.format("Grain: %d", tier))
 
 	-- no change?
 	if ppe == current_ppe then
@@ -143,12 +145,12 @@ local function set_blur(msv)
 			level.remove_pp_effector(PP_BLUR_ID)
 			blur_active = false
 		end
-		overlay(LOG_TYPE.BLUR, "Blur: 0")
+		overlay(LOG.BLUR, "Blur: 0")
 		return
 	end
 
 	local intensity = CONFIG.blur_range:normalize(msv)
-	overlay(LOG_TYPE.BLUR, string.format("Blur: %.2f", intensity))
+	overlay(LOG.BLUR, string.format("Blur: %.2f", intensity))
 
 	if intensity == 0 then
 		if blur_active then
@@ -172,12 +174,12 @@ local function set_dual(msv)
 			level.remove_pp_effector(PP_DUAL_ID)
 			dual_active = false
 		end
-		overlay(LOG_TYPE.DUAL, "Dual: 0")
+		overlay(LOG.DUAL, "Dual: 0")
 		return
 	end
 
 	local intensity = CONFIG.dual_range:normalize(msv)
-	overlay(LOG_TYPE.DUAL, string.format("Dual: %.2f", intensity))
+	overlay(LOG.DUAL, string.format("Dual: %.2f", intensity))
 
 	if intensity == 0 then
 		if dual_active then
@@ -214,8 +216,8 @@ local function on_actor_on_update()
 	local radiation = actor.radiation or 0
 	local msv = radiation * 10000 * 0.387
 
-	overlay(LOG_TYPE.RADS, string.format("Rads: %.2f", radiation))
-	overlay(LOG_TYPE.MSV, string.format("MSV: %d", math.ceil(msv)))
+	overlay(LOG.RADS, string.format("Rads: %.2f", radiation))
+	overlay(LOG.MSV, string.format("MSV: %d", math.ceil(msv)))
 
 	set_grain(msv)
 	set_blur(msv)

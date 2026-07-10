@@ -26,9 +26,11 @@ https://github.com/user-attachments/assets/1c090b64-712d-4187-91e5-d97ed291209b
 
 - https://github.com/JoshuaCarter/GAMMA-Dont-ReEquip-PDA
 - https://github.com/JoshuaCarter/GAMMA-Faster-Skinning
-- https://github.com/JoshuaCarter/GAMMA-Field-Strip-All-Keybind
 - https://github.com/JoshuaCarter/GAMMA-FPS-Counter
 - https://github.com/JoshuaCarter/GAMMA-Giant-Jump
 - https://github.com/JoshuaCarter/GAMMA-Optimal-Tool-Use
+- https://github.com/JoshuaCarter/GAMMA-Pose-Controls
 - https://github.com/JoshuaCarter/GAMMA-Prone-Fix
+- https://github.com/JoshuaCarter/GAMMA-Radiation-Grain-Fix
+- https://github.com/JoshuaCarter/GAMMA-Strip-Everything
 - https://github.com/JoshuaCarter/GAMMA-Tooltip-Weapon-Damage
